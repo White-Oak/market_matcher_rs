@@ -17,7 +17,12 @@ fn test_adding_buy_limit_to_empty_book() {
         user_id: 1,
         request_type: Type::Limit
     };
-    book.match_request(&limit_request.clone());
+    let matching_result = book.match_request(&limit_request);
+    let expected = MatchingResult {
+        market_actions: vec![],
+        request_actions: vec![RequestAction::AddedToBook]
+    };
+    assert_eq!(matching_result, expected);
     assert_eq!(book.buyers.len(), 1);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers[0], limit_request);
@@ -33,7 +38,15 @@ fn test_adding_sell_limit_to_empty_book() {
         user_id: 1,
         request_type: Type::Limit
     };
-    book.match_request(&limit_request);
+    let matching_result = book.match_request(&limit_request);
+    let expected = MatchingResult {
+        market_actions: vec![],
+        request_actions: vec![RequestAction::AddedToBook]
+    };
+    assert_eq!(matching_result, expected);
+    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers.len(), 1);
+    assert_eq!(book.sellers[0], limit_request);
 }
 
 #[test]
@@ -69,7 +82,12 @@ fn test_adding_buy_limit_to_non_empty_book() {
             user_id: 24,
             request_type: Type::Limit
         };
-    book.match_request(&request);
+    let matching_result = book.match_request(&request);
+    let expected = MatchingResult {
+        market_actions: vec![],
+        request_actions: vec![RequestAction::AddedToBook]
+    };
+    assert_eq!(matching_result, expected);
     assert_eq!(book.buyers.last().unwrap().price, 11);
     // testing whether correct order (by time, the first is earliest) is maintained when adding new request
     let request =
@@ -80,7 +98,8 @@ fn test_adding_buy_limit_to_non_empty_book() {
             user_id: 24,
             request_type: Type::Limit
         };
-    book.match_request(&request);
+    let matching_result = book.match_request(&request);
+    assert_eq!(matching_result, expected);
     assert_eq!(book.buyers[4].price, 2);
     assert_eq!(book.buyers[4].user_id, 24);
 }
@@ -118,7 +137,12 @@ fn test_adding_sell_limit_to_non_empty_book() {
             user_id: 24,
             request_type: Type::Limit
         };
-    book.match_request(&request);
+    let matching_result = book.match_request(&request);
+    let expected = MatchingResult {
+        market_actions: vec![],
+        request_actions: vec![RequestAction::AddedToBook]
+    };
+    assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.first().unwrap().price, 11);
     // testing whether correct order (by time, the first is earliest) is maintained when adding new request
     let request =
@@ -129,7 +153,8 @@ fn test_adding_sell_limit_to_non_empty_book() {
             user_id: 24,
             request_type: Type::Limit
         };
-    book.match_request(&request);
+    let matching_result = book.match_request(&request);
+    assert_eq!(matching_result, expected);
     assert_eq!(book.sellers[3].price, 10);
     assert_eq!(book.sellers[3].user_id, 24);
 }
@@ -147,17 +172,32 @@ fn test_simple_limit_matching_one_to_one() {
     book.match_request(&limit_request.clone());
     limit_request.side = Side::Sell;
     // should not sell to the same user
-    book.match_request(&limit_request.clone());
+    let matching_result = book.match_request(&limit_request);
+    let expected = MatchingResult {
+        market_actions: vec![],
+        request_actions: vec![RequestAction::AddedToBook]
+    };
+    assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 1);
     limit_request.user_id = 2;
     // should sell to other user
-    book.match_request(&limit_request.clone());
+    let matching_result = book.match_request(&limit_request);
+    let expected = MatchingResult {
+        market_actions: vec![MarketAction { size: 1, price: 1, seller_user_id: 2, buyer_user_id: 1 }],
+        request_actions: vec![RequestAction::Filled]
+    };
+    assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 0);
     limit_request.side = Side::Buy;
     // should buy from other user
-    book.match_request(&limit_request.clone());
+    let matching_result = book.match_request(&limit_request);
+    let expected = MatchingResult {
+        market_actions: vec![MarketAction { size: 1, price: 1, seller_user_id: 1, buyer_user_id: 2 }],
+        request_actions: vec![RequestAction::Filled]
+    };
+    assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }

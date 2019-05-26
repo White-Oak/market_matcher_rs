@@ -23,8 +23,7 @@ pub struct Request {
     pub request_type: Type
 }
 
-#[derive(Debug)]
-pub struct MarketAction {
+pub struct MarketActionToApply {
     size: u64,
     price: u64,
     seller_user_id: u64,
@@ -32,6 +31,26 @@ pub struct MarketAction {
     index_in_book: usize
 }
 
+impl From<MarketActionToApply> for MarketAction {
+    fn from(mata: MarketActionToApply) -> Self {
+        MarketAction {
+            size: mata.size,
+            price: mata.price,
+            seller_user_id: mata.seller_user_id,
+            buyer_user_id: mata.buyer_user_id,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct MarketAction {
+    pub size: u64,
+    pub price: u64,
+    pub seller_user_id: u64,
+    pub buyer_user_id: u64,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum RequestAction {
     Filled,
     FilledPartially,
@@ -39,9 +58,10 @@ pub enum RequestAction {
     AddedToBook,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct MatchingResult {
-    market_actions: Vec<MarketAction>,
-    request_actions: Vec<RequestAction>
+    pub market_actions: Vec<MarketAction>,
+    pub request_actions: Vec<RequestAction>
 }
 
 #[derive(Default, Debug, Clone)]
@@ -103,7 +123,7 @@ impl OrderBook {
                         }
                         let max_allowed = cmp::min(buyer.size, left);
                         left -= max_allowed;
-                        let market_action = MarketAction {
+                        let market_action = MarketActionToApply {
                             size: max_allowed,
                             price: buyer.price,
                             seller_user_id: request.user_id,
@@ -149,7 +169,7 @@ impl OrderBook {
                         }
                         let max_allowed = cmp::min(seller.size, left);
                         left -= max_allowed;
-                        let market_action = MarketAction {
+                        let market_action = MarketActionToApply {
                             size: max_allowed,
                             price: seller.price,
                             seller_user_id: seller.user_id,
@@ -256,7 +276,7 @@ impl OrderBook {
             }
         }
         MatchingResult {
-            market_actions,
+            market_actions: market_actions.into_iter().map(|i| i.into()).collect(),
             request_actions
         }
     }
