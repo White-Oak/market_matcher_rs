@@ -23,12 +23,20 @@ pub struct Request {
     pub request_type: Type
 }
 
-pub struct MarketActionToApply {
+struct MarketActionToApply {
     size: u64,
     price: u64,
     seller_user_id: u64,
     buyer_user_id: u64,
     index_in_book: usize
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct MarketAction {
+    pub size: u64,
+    pub price: u64,
+    pub seller_user_id: u64,
+    pub buyer_user_id: u64,
 }
 
 impl From<MarketActionToApply> for MarketAction {
@@ -40,14 +48,6 @@ impl From<MarketActionToApply> for MarketAction {
             buyer_user_id: mata.buyer_user_id,
         }
     }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct MarketAction {
-    pub size: u64,
-    pub price: u64,
-    pub seller_user_id: u64,
-    pub buyer_user_id: u64,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -74,7 +74,9 @@ impl OrderBook {
     fn insert_limit_request(&mut self, request: Request) {
         match request.side {
             Side::Buy => {
-                let search_result = self.buyers.binary_search_by(|probe| probe.price.cmp(&request.price));
+                // the order for buyers is from the highest to the lowest
+                let search_result = self.buyers
+                    .binary_search_by(|probe| probe.price.cmp(&request.price).reverse());
                 match search_result {
                     Err(i) => self.buyers.insert(i, request),
                     Ok(i) => {
@@ -87,12 +89,14 @@ impl OrderBook {
                 }
             },
             Side::Sell => {
-                let search_result = self.sellers.binary_search_by(|probe| probe.price.cmp(&request.price).reverse());
+                // the order for sellers is from the lowest to the highest
+                let search_result = self.sellers
+                    .binary_search_by(|probe| probe.price.cmp(&request.price));
                 match search_result {
                     Err(i) => self.sellers.insert(i, request),
                     Ok(i) => {
                         let mut index = i + 1;
-                        while index < self.buyers.len() && self.sellers[index].price == request.price {
+                        while index < self.sellers.len() && self.sellers[index].price == request.price {
                             index += 1;
                         }
                         self.sellers.insert(index, request);

@@ -68,10 +68,10 @@ fn test_adding_buy_limit_to_non_empty_book() {
     for request in requests {
         book.match_request(&request);
     }
-    // asserting that buy book is sorted from the lowest to the highest point
+    // asserting that buy book is sorted from the highest to the lowest point
     for i in 0..=9 {
         for j in 0..=1 {
-            assert_eq!(book.buyers[i * 2 + j].price, (i + 1) as u64);
+            assert_eq!(book.buyers[i * 2 + j].price, (10 - i) as u64);
         }
     };
     let request =
@@ -88,28 +88,27 @@ fn test_adding_buy_limit_to_non_empty_book() {
         request_actions: vec![RequestAction::AddedToBook]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.buyers.last().unwrap().price, 11);
+    assert_eq!(book.buyers[0], request);
     // testing whether correct order (by time, the first is earliest) is maintained when adding new request
     let request =
         Request {
             side: Side::Buy,
-            price: 2,
+            price: 10,
             size: 1,
             user_id: 24,
             request_type: Type::Limit
         };
     let matching_result = book.match_request(&request);
     assert_eq!(matching_result, expected);
-    assert_eq!(book.buyers[4].price, 2);
-    assert_eq!(book.buyers[4].user_id, 24);
+    assert_eq!(book.buyers[3], request);
 }
 
 #[test]
 fn test_adding_sell_limit_to_non_empty_book() {
     let mut book = OrderBook::default();
-    // generating 20 requests with prices from 1 to 10
+    // generating 20 requests with prices from 2 to 10
     let requests =
-        (1..=10).flat_map(|i| {
+        (2..=10).flat_map(|i| {
             (1..=2).map(move |_| {
                 Request {
                     side: Side::Sell,
@@ -123,16 +122,17 @@ fn test_adding_sell_limit_to_non_empty_book() {
     for request in requests {
         book.match_request(&request);
     }
-    // asserting that sell book is sorted from the highest to the lowest point
-    for i in 0..=9 {
-        for j in 0..=1 {
-            assert_eq!(book.sellers[i * 2 + j].price, (10 - i) as u64);
+    // asserting that sell book is sorted from the lowest to the highest price
+    for i in 0..9 {
+        for j in 0..2 {
+            assert_eq!(book.sellers[i * 2 + j].price, (i + 2) as u64);
         }
     };
+    // testing that new low enough item will be added at the beginning
     let request =
         Request {
             side: Side::Sell,
-            price: 11,
+            price: 1,
             size: 1,
             user_id: 24,
             request_type: Type::Limit
@@ -143,20 +143,20 @@ fn test_adding_sell_limit_to_non_empty_book() {
         request_actions: vec![RequestAction::AddedToBook]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.sellers.first().unwrap().price, 11);
-    // testing whether correct order (by time, the first is earliest) is maintained when adding new request
+    assert_eq!(book.sellers[0], request);
+    // testing whether correct order (FIFO by time, the first is earliest)
+    // is maintained when adding new request
     let request =
         Request {
             side: Side::Sell,
-            price: 10,
+            price: 2,
             size: 1,
             user_id: 24,
             request_type: Type::Limit
         };
     let matching_result = book.match_request(&request);
     assert_eq!(matching_result, expected);
-    assert_eq!(book.sellers[3].price, 10);
-    assert_eq!(book.sellers[3].user_id, 24);
+    assert_eq!(book.sellers[3], request);
 }
 
 #[test]
@@ -200,6 +200,72 @@ fn test_simple_limit_matching_one_to_one() {
     assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
+}
+
+#[test]
+fn test_correct_logic_of_buying_matching() {
+    let mut book = OrderBook::default();
+    for i in 1..=5 {
+        let limit_request = Request {
+            side: Side::Sell,
+            price: i,
+            size: 1,
+            user_id: 1,
+            request_type: Type::Limit
+        };
+        book.match_request(&limit_request);
+    }
+    for i in 5..10 {
+        let limit_request = Request {
+            side: Side::Buy,
+            price: i,
+            size: 1,
+            user_id: 2,
+            request_type: Type::Limit
+        };
+        let matching_result = book.match_request(&limit_request);
+        let expected = MatchingResult {
+            market_actions: vec![MarketAction { size: 1, price: i - 4,
+            seller_user_id: 1, buyer_user_id: 2 }],
+            request_actions: vec![RequestAction::Filled]
+        };
+        assert_eq!(book.sellers.len(), (10 - i - 1) as usize);
+        assert_eq!(book.buyers.len(), 0);
+        assert_eq!(matching_result, expected);
+    }
+}
+
+#[test]
+fn test_correct_logic_of_selling_matching() {
+    let mut book = OrderBook::default();
+    for i in 6..=10 {
+        let limit_request = Request {
+            side: Side::Buy,
+            price: i,
+            size: 1,
+            user_id: 1,
+            request_type: Type::Limit
+        };
+        book.match_request(&limit_request);
+    }
+    for i in 1..=5 {
+        let limit_request = Request {
+            side: Side::Sell,
+            price: i,
+            size: 1,
+            user_id: 2,
+            request_type: Type::Limit
+        };
+        let matching_result = book.match_request(&limit_request);
+        let expected = MatchingResult {
+            market_actions: vec![MarketAction { size: 1, price: 10 - i + 1,
+            seller_user_id: 2, buyer_user_id: 1 }],
+            request_actions: vec![RequestAction::Filled]
+        };
+        assert_eq!(book.buyers.len(), (5 - i) as usize);
+        assert_eq!(book.sellers.len(), 0);
+        assert_eq!(matching_result, expected);
+    }
 }
 
 #[test]
