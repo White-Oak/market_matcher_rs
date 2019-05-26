@@ -278,12 +278,12 @@ fn test_limit_matching_with_leftovers() {
         user_id: 1,
         request_type: Type::Limit
     };
-    book.match_request(&limit_request.clone());
+    book.match_request(&limit_request);
     limit_request.side = Side::Sell;
     limit_request.user_id = 2;
     limit_request.size = 5;
     // lets try selling 5 pieces to an order with 1 piece
-    book.match_request(&limit_request.clone());
+    book.match_request(&limit_request);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 0);
     limit_request.size = 4;
@@ -322,14 +322,14 @@ fn test_spread_limit_matching() {
         request_type: Type::Limit
     };
     // let's cover all of the buy offers and leave 100 in a book
-    book.match_request(&limit_request.clone());
+    book.match_request(&limit_request);
     assert_eq!(book.sellers.len(), 101);
     assert_eq!(book.buyers.len(), 0);
     limit_request.side = Side::Buy;
     limit_request.price = 1000;
     // let's cover all of the sell offers (except previous one cause it's from the same user)
     // and leave 100 in book
-    book.match_request(&limit_request.clone());
+    book.match_request(&limit_request);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 1);
     assert_eq!(book.buyers[0].size, 100);
@@ -355,18 +355,18 @@ fn test_simple_fill_or_kill_selling_one_to_one() {
         request_type: Type::FillOrKill
     };
     // same user_id shouldn't sell to the book
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 1);
     fk_request.user_id = 2;
     fk_request.size = 3;
     // unfilled incoming request should pass by
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 1);
     fk_request.size = 2;
     // filled incoming request should be matched
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -390,18 +390,18 @@ fn test_simple_fill_or_kill_bying_one_to_one() {
         request_type: Type::FillOrKill
     };
     // same user_id shouldn't sell to the book
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 0);
     fk_request.user_id = 2;
     fk_request.size = 3;
     // unfilled incoming request should pass by
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 0);
     fk_request.size = 2;
     // filled incoming request should be matched
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -417,7 +417,7 @@ fn test_spread_fill_or_kill_selling() {
         request_type: Type::Limit
     };
     for _ in 0..100 {
-        book.match_request(&limit_request.clone());
+        book.match_request(&limit_request);
     }
     let mut fk_request = Request {
         side: Side::Sell,
@@ -427,12 +427,12 @@ fn test_spread_fill_or_kill_selling() {
         request_type: Type::FillOrKill
     };
     // shouldn't sell when is not satisfied
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 100);
     fk_request.size = 100;
     // filled incoming request should be matched
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -448,7 +448,7 @@ fn test_spread_fill_or_kill_buying() {
         request_type: Type::Limit
     };
     for _ in 0..100 {
-        book.match_request(&limit_request.clone());
+        book.match_request(&limit_request);
     }
     let mut fk_request = Request {
         side: Side::Buy,
@@ -458,12 +458,12 @@ fn test_spread_fill_or_kill_buying() {
         request_type: Type::FillOrKill
     };
     // shouldn't sell when is not satisfied
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 100);
     assert_eq!(book.buyers.len(), 0);
     fk_request.size = 100;
     // filled incoming request should be matched
-    book.match_request(&fk_request.clone());
+    book.match_request(&fk_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -487,19 +487,19 @@ fn test_simple_immediate_or_cancel_selling_one_to_one() {
         request_type: Type::ImmediateOrCancel
     };
     // same user_id shouldn't sell to the book
-    book.match_request(&ic_request.clone());
+    book.match_request(&ic_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 1);
     assert_eq!(book.buyers[0].size, 3);
     ic_request.user_id = 2;
     // unfilled incoming request should pass by
-    book.match_request(&ic_request.clone());
+    book.match_request(&ic_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 1);
     assert_eq!(book.buyers[0].size, 2);
     ic_request.size = 2;
     // filled incoming request should be matched
-    book.match_request(&ic_request.clone());
+    book.match_request(&ic_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -523,19 +523,19 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
         request_type: Type::ImmediateOrCancel
     };
     // same user_id shouldn't buy from the book
-    book.match_request(&ic_request.clone());
+    book.match_request(&ic_request);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 0);
     assert_eq!(book.sellers[0].size, 3);
     ic_request.user_id = 2;
     // unfilled incoming request should pass by
-    book.match_request(&ic_request.clone());
+    book.match_request(&ic_request);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 0);
     assert_eq!(book.sellers[0].size, 2);
     ic_request.size = 2;
     // filled incoming request should be matched
-    book.match_request(&ic_request.clone());
+    book.match_request(&ic_request);
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -559,6 +559,7 @@ impl Distribution<Side> for Standard {
     }
 }
 
+// Not really a test that tests some specific behaviour
 #[test]
 fn test_shuffle_requests() {
     let mut book = OrderBook::default();
