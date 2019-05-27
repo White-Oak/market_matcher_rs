@@ -153,6 +153,7 @@ fn fk_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, l_benchmark, ic_benchmark, fk_benchmark, l_insert_benchmark, l_insert_worst_case_benchmark);
+criterion_group!(benches, l_benchmark, ic_benchmark, fk_benchmark,
+                 l_insert_benchmark, l_insert_worst_case_benchmark);
 // criterion_group!(benches, fk_benchmark);
 criterion_main!(benches);
