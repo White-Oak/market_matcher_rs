@@ -8,12 +8,12 @@ fn test_adding_buy_limit_to_empty_book() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     let matching_result = book.match_request(&limit_request);
     let expected = MatchingResult {
         market_actions: vec![],
-        request_actions: vec![RequestAction::AddedToBook]
+        request_actions: vec![RequestAction::AddedToBook],
     };
     assert_eq!(matching_result, expected);
     assert_eq!(book.buyers.len(), 1);
@@ -29,12 +29,12 @@ fn test_adding_sell_limit_to_empty_book() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     let matching_result = book.match_request(&limit_request);
     let expected = MatchingResult {
         market_actions: vec![],
-        request_actions: vec![RequestAction::AddedToBook]
+        request_actions: vec![RequestAction::AddedToBook],
     };
     assert_eq!(matching_result, expected);
     assert_eq!(book.buyers.len(), 0);
@@ -46,18 +46,15 @@ fn test_adding_sell_limit_to_empty_book() {
 fn test_adding_buy_limit_to_non_empty_book() {
     let mut book = OrderBook::default();
     // generating 20 requests with prices from 1 to 10
-    let requests =
-        (1..=10).flat_map(|i| {
-            (1..=2).map(move |_| {
-                Request {
-                    side: Side::Buy,
-                    price: i,
-                    size: 1,
-                    user_id: i,
-                    request_type: Type::Limit
-                }
-            })
-        });
+    let requests = (1..=10).flat_map(|i| {
+        (1..=2).map(move |_| Request {
+            side: Side::Buy,
+            price: i,
+            size: 1,
+            user_id: i,
+            request_type: Type::Limit,
+        })
+    });
     for request in requests {
         book.match_request(&request);
     }
@@ -66,31 +63,29 @@ fn test_adding_buy_limit_to_non_empty_book() {
         for j in 0..=1 {
             assert_eq!(book.buyers[i * 2 + j].price, (10 - i) as u64);
         }
+    }
+    let request = Request {
+        side: Side::Buy,
+        price: 11,
+        size: 1,
+        user_id: 24,
+        request_type: Type::Limit,
     };
-    let request =
-        Request {
-            side: Side::Buy,
-            price: 11,
-            size: 1,
-            user_id: 24,
-            request_type: Type::Limit
-        };
     let matching_result = book.match_request(&request);
     let expected = MatchingResult {
         market_actions: vec![],
-        request_actions: vec![RequestAction::AddedToBook]
+        request_actions: vec![RequestAction::AddedToBook],
     };
     assert_eq!(matching_result, expected);
     assert_eq!(book.buyers[0], request);
     // testing whether correct order (by time, the first is earliest) is maintained when adding new request
-    let request =
-        Request {
-            side: Side::Buy,
-            price: 10,
-            size: 1,
-            user_id: 24,
-            request_type: Type::Limit
-        };
+    let request = Request {
+        side: Side::Buy,
+        price: 10,
+        size: 1,
+        user_id: 24,
+        request_type: Type::Limit,
+    };
     let matching_result = book.match_request(&request);
     assert_eq!(matching_result, expected);
     assert_eq!(book.buyers[3], request);
@@ -100,18 +95,15 @@ fn test_adding_buy_limit_to_non_empty_book() {
 fn test_adding_sell_limit_to_non_empty_book() {
     let mut book = OrderBook::default();
     // generating 20 requests with prices from 2 to 10
-    let requests =
-        (2..=10).flat_map(|i| {
-            (1..=2).map(move |_| {
-                Request {
-                    side: Side::Sell,
-                    price: i,
-                    size: 1,
-                    user_id: i,
-                    request_type: Type::Limit
-                }
-            })
-        });
+    let requests = (2..=10).flat_map(|i| {
+        (1..=2).map(move |_| Request {
+            side: Side::Sell,
+            price: i,
+            size: 1,
+            user_id: i,
+            request_type: Type::Limit,
+        })
+    });
     for request in requests {
         book.match_request(&request);
     }
@@ -120,33 +112,31 @@ fn test_adding_sell_limit_to_non_empty_book() {
         for j in 0..2 {
             assert_eq!(book.sellers[i * 2 + j].price, (i + 2) as u64);
         }
-    };
+    }
     // testing that new low enough item will be added at the beginning
-    let request =
-        Request {
-            side: Side::Sell,
-            price: 1,
-            size: 1,
-            user_id: 24,
-            request_type: Type::Limit
-        };
+    let request = Request {
+        side: Side::Sell,
+        price: 1,
+        size: 1,
+        user_id: 24,
+        request_type: Type::Limit,
+    };
     let matching_result = book.match_request(&request);
     let expected = MatchingResult {
         market_actions: vec![],
-        request_actions: vec![RequestAction::AddedToBook]
+        request_actions: vec![RequestAction::AddedToBook],
     };
     assert_eq!(matching_result, expected);
     assert_eq!(book.sellers[0], request);
     // testing whether correct order (FIFO by time, the first is earliest)
     // is maintained when adding new request
-    let request =
-        Request {
-            side: Side::Sell,
-            price: 2,
-            size: 1,
-            user_id: 24,
-            request_type: Type::Limit
-        };
+    let request = Request {
+        side: Side::Sell,
+        price: 2,
+        size: 1,
+        user_id: 24,
+        request_type: Type::Limit,
+    };
     let matching_result = book.match_request(&request);
     assert_eq!(matching_result, expected);
     assert_eq!(book.sellers[3], request);
@@ -160,7 +150,7 @@ fn test_simple_limit_matching_one_to_one() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&limit_request.clone());
     limit_request.side = Side::Sell;
@@ -168,7 +158,7 @@ fn test_simple_limit_matching_one_to_one() {
     let matching_result = book.match_request(&limit_request);
     let expected = MatchingResult {
         market_actions: vec![],
-        request_actions: vec![RequestAction::AddedToBook]
+        request_actions: vec![RequestAction::AddedToBook],
     };
     assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.len(), 1);
@@ -177,8 +167,13 @@ fn test_simple_limit_matching_one_to_one() {
     // should sell to other user
     let matching_result = book.match_request(&limit_request);
     let expected = MatchingResult {
-        market_actions: vec![MarketAction { size: 1, price: 1, seller_user_id: 2, buyer_user_id: 1 }],
-        request_actions: vec![RequestAction::Filled]
+        market_actions: vec![MarketAction {
+            size: 1,
+            price: 1,
+            seller_user_id: 2,
+            buyer_user_id: 1,
+        }],
+        request_actions: vec![RequestAction::Filled],
     };
     assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.len(), 1);
@@ -187,8 +182,13 @@ fn test_simple_limit_matching_one_to_one() {
     // should buy from other user
     let matching_result = book.match_request(&limit_request);
     let expected = MatchingResult {
-        market_actions: vec![MarketAction { size: 1, price: 1, seller_user_id: 1, buyer_user_id: 2 }],
-        request_actions: vec![RequestAction::Filled]
+        market_actions: vec![MarketAction {
+            size: 1,
+            price: 1,
+            seller_user_id: 1,
+            buyer_user_id: 2,
+        }],
+        request_actions: vec![RequestAction::Filled],
     };
     assert_eq!(matching_result, expected);
     assert_eq!(book.sellers.len(), 0);
@@ -204,7 +204,7 @@ fn test_correct_logic_of_buying_matching() {
             price: i,
             size: 1,
             user_id: 1,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         book.match_request(&limit_request);
     }
@@ -214,13 +214,17 @@ fn test_correct_logic_of_buying_matching() {
             price: i,
             size: 1,
             user_id: 2,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         let matching_result = book.match_request(&limit_request);
         let expected = MatchingResult {
-            market_actions: vec![MarketAction { size: 1, price: i - 4,
-            seller_user_id: 1, buyer_user_id: 2 }],
-            request_actions: vec![RequestAction::Filled]
+            market_actions: vec![MarketAction {
+                size: 1,
+                price: i - 4,
+                seller_user_id: 1,
+                buyer_user_id: 2,
+            }],
+            request_actions: vec![RequestAction::Filled],
         };
         assert_eq!(book.sellers.len(), (10 - i - 1) as usize);
         assert_eq!(book.buyers.len(), 0);
@@ -237,7 +241,7 @@ fn test_correct_logic_of_selling_matching() {
             price: i,
             size: 1,
             user_id: 1,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         book.match_request(&limit_request);
     }
@@ -247,13 +251,17 @@ fn test_correct_logic_of_selling_matching() {
             price: i,
             size: 1,
             user_id: 2,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         let matching_result = book.match_request(&limit_request);
         let expected = MatchingResult {
-            market_actions: vec![MarketAction { size: 1, price: 10 - i + 1,
-            seller_user_id: 2, buyer_user_id: 1 }],
-            request_actions: vec![RequestAction::Filled]
+            market_actions: vec![MarketAction {
+                size: 1,
+                price: 10 - i + 1,
+                seller_user_id: 2,
+                buyer_user_id: 1,
+            }],
+            request_actions: vec![RequestAction::Filled],
         };
         assert_eq!(book.buyers.len(), (5 - i) as usize);
         assert_eq!(book.sellers.len(), 0);
@@ -269,7 +277,7 @@ fn test_limit_matching_with_leftovers() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&limit_request);
     limit_request.side = Side::Sell;
@@ -293,7 +301,7 @@ fn test_spread_limit_matching() {
             price: i,
             size: 2,
             user_id: i,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         book.match_request(&limit_request);
     }
@@ -303,7 +311,7 @@ fn test_spread_limit_matching() {
             price: i,
             size: 2,
             user_id: i,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         book.match_request(&limit_request);
     }
@@ -312,7 +320,7 @@ fn test_spread_limit_matching() {
         price: 1,
         size: 300,
         user_id: 1000,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     // let's cover all of the buy offers and leave 100 in a book
     book.match_request(&limit_request);
@@ -337,7 +345,7 @@ fn test_simple_fill_or_kill_selling_one_to_one() {
         price: 1,
         size: 2,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&limit_request);
     let mut fk_request = Request {
@@ -345,7 +353,7 @@ fn test_simple_fill_or_kill_selling_one_to_one() {
         price: 1,
         size: 2,
         user_id: 1,
-        request_type: Type::FillOrKill
+        request_type: Type::FillOrKill,
     };
     // same user_id shouldn't sell to the book
     book.match_request(&fk_request);
@@ -372,7 +380,7 @@ fn test_simple_fill_or_kill_bying_one_to_one() {
         price: 1,
         size: 2,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&limit_request);
     let mut fk_request = Request {
@@ -380,7 +388,7 @@ fn test_simple_fill_or_kill_bying_one_to_one() {
         price: 1,
         size: 2,
         user_id: 1,
-        request_type: Type::FillOrKill
+        request_type: Type::FillOrKill,
     };
     // same user_id shouldn't sell to the book
     book.match_request(&fk_request);
@@ -407,7 +415,7 @@ fn test_spread_fill_or_kill_selling() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     for _ in 0..100 {
         book.match_request(&limit_request);
@@ -417,7 +425,7 @@ fn test_spread_fill_or_kill_selling() {
         price: 1,
         size: 101,
         user_id: 2,
-        request_type: Type::FillOrKill
+        request_type: Type::FillOrKill,
     };
     // shouldn't sell when is not satisfied
     book.match_request(&fk_request);
@@ -438,7 +446,7 @@ fn test_spread_fill_or_kill_buying() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     for _ in 0..100 {
         book.match_request(&limit_request);
@@ -448,7 +456,7 @@ fn test_spread_fill_or_kill_buying() {
         price: 1,
         size: 101,
         user_id: 2,
-        request_type: Type::FillOrKill
+        request_type: Type::FillOrKill,
     };
     // shouldn't sell when is not satisfied
     book.match_request(&fk_request);
@@ -469,7 +477,7 @@ fn test_simple_immediate_or_cancel_selling_one_to_one() {
         price: 1,
         size: 3,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&limit_request);
     let mut ic_request = Request {
@@ -477,7 +485,7 @@ fn test_simple_immediate_or_cancel_selling_one_to_one() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::ImmediateOrCancel
+        request_type: Type::ImmediateOrCancel,
     };
     // same user_id shouldn't sell to the book
     book.match_request(&ic_request);
@@ -505,7 +513,7 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
         price: 1,
         size: 3,
         user_id: 1,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&limit_request);
     let mut ic_request = Request {
@@ -513,7 +521,7 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
         price: 1,
         size: 1,
         user_id: 1,
-        request_type: Type::ImmediateOrCancel
+        request_type: Type::ImmediateOrCancel,
     };
     // same user_id shouldn't buy from the book
     book.match_request(&ic_request);
