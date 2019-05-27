@@ -38,7 +38,7 @@ fn l_insert_worst_case_benchmark(c: &mut Criterion) {
     let mut book = OrderBook::default();
     for i in 0..7000 {
         let request = Request {
-            price: 1,
+            price: 2,
             size: 1,
             side: Side::Sell,
             request_type: Type::Limit,
@@ -47,7 +47,7 @@ fn l_insert_worst_case_benchmark(c: &mut Criterion) {
         book.match_request(&request.clone());
     }
     let request = Request {
-        price: 2,
+        price: 1,
         size: 1,
         side: Side::Sell,
         request_type: Type::Limit,
