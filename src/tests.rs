@@ -1,10 +1,3 @@
-extern crate rand;
-
-use rand::{
-    distributions::{Distribution, Standard},
-    Rng,
-};
-
 use crate::matcher::*;
 
 #[test]
@@ -539,39 +532,3 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
-
-impl Distribution<Type> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Type {
-        match rng.gen_range(0, 5) {
-            0 => Type::FillOrKill,
-            1 => Type::ImmediateOrCancel,
-            _ => Type::Limit,
-        }
-    }
-}
-
-impl Distribution<Side> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Side {
-        match rng.gen_range(0, 1) {
-            0 => Side::Buy,
-            _ => Side::Sell,
-        }
-    }
-}
-
-// Not really a test that tests some specific behaviour
-#[test]
-fn test_shuffle_requests() {
-    let mut book = OrderBook::default();
-    for _ in 0..9999 {
-        let request = Request {
-            price: rand::random(),
-            size: rand::random(),
-            user_id: rand::random(),
-            side: rand::random(),
-            request_type: rand::random()
-        };
-        book.match_request(&request);
-    }
-}
-
