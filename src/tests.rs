@@ -23,9 +23,9 @@ fn test_adding_buy_limit_to_empty_book() {
         request_actions: vec![RequestAction::AddedToBook]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.buyers.len(), 1);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers[0], limit_request);
+    assert_eq!(book.buyers().len(), 1);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers()[0], limit_request);
 }
 
 #[test]
@@ -44,9 +44,9 @@ fn test_adding_sell_limit_to_empty_book() {
         request_actions: vec![RequestAction::AddedToBook]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.buyers.len(), 0);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.sellers[0], limit_request);
+    assert_eq!(book.buyers().len(), 0);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.sellers()[0], limit_request);
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn test_adding_buy_limit_to_non_empty_book() {
     // asserting that buy book is sorted from the highest to the lowest point
     for i in 0..=9 {
         for j in 0..=1 {
-            assert_eq!(book.buyers[i * 2 + j].price, (10 - i) as u64);
+            assert_eq!(book.buyers()[i * 2 + j].price, (10 - i) as u64);
         }
     };
     let request =
@@ -88,7 +88,7 @@ fn test_adding_buy_limit_to_non_empty_book() {
         request_actions: vec![RequestAction::AddedToBook]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.buyers[0], request);
+    assert_eq!(book.buyers()[0], request);
     // testing whether correct order (by time, the first is earliest) is maintained when adding new request
     let request =
         Request {
@@ -100,7 +100,7 @@ fn test_adding_buy_limit_to_non_empty_book() {
         };
     let matching_result = book.match_request(&request);
     assert_eq!(matching_result, expected);
-    assert_eq!(book.buyers[3], request);
+    assert_eq!(book.buyers()[3], request);
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn test_adding_sell_limit_to_non_empty_book() {
     // asserting that sell book is sorted from the lowest to the highest price
     for i in 0..9 {
         for j in 0..2 {
-            assert_eq!(book.sellers[i * 2 + j].price, (i + 2) as u64);
+            assert_eq!(book.sellers()[i * 2 + j].price, (i + 2) as u64);
         }
     };
     // testing that new low enough item will be added at the beginning
@@ -143,7 +143,7 @@ fn test_adding_sell_limit_to_non_empty_book() {
         request_actions: vec![RequestAction::AddedToBook]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.sellers[0], request);
+    assert_eq!(book.sellers()[0], request);
     // testing whether correct order (FIFO by time, the first is earliest)
     // is maintained when adding new request
     let request =
@@ -156,7 +156,7 @@ fn test_adding_sell_limit_to_non_empty_book() {
         };
     let matching_result = book.match_request(&request);
     assert_eq!(matching_result, expected);
-    assert_eq!(book.sellers[3], request);
+    assert_eq!(book.sellers()[3], request);
 }
 
 #[test]
@@ -178,8 +178,8 @@ fn test_simple_limit_matching_one_to_one() {
         request_actions: vec![RequestAction::AddedToBook]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 1);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 1);
     limit_request.user_id = 2;
     // should sell to other user
     let matching_result = book.match_request(&limit_request);
@@ -188,8 +188,8 @@ fn test_simple_limit_matching_one_to_one() {
         request_actions: vec![RequestAction::Filled]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 0);
     limit_request.side = Side::Buy;
     // should buy from other user
     let matching_result = book.match_request(&limit_request);
@@ -198,8 +198,8 @@ fn test_simple_limit_matching_one_to_one() {
         request_actions: vec![RequestAction::Filled]
     };
     assert_eq!(matching_result, expected);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 0);
 }
 
 #[test]
@@ -229,8 +229,8 @@ fn test_correct_logic_of_buying_matching() {
             seller_user_id: 1, buyer_user_id: 2 }],
             request_actions: vec![RequestAction::Filled]
         };
-        assert_eq!(book.sellers.len(), (10 - i - 1) as usize);
-        assert_eq!(book.buyers.len(), 0);
+        assert_eq!(book.sellers().len(), (10 - i - 1) as usize);
+        assert_eq!(book.buyers().len(), 0);
         assert_eq!(matching_result, expected);
     }
 }
@@ -262,8 +262,8 @@ fn test_correct_logic_of_selling_matching() {
             seller_user_id: 2, buyer_user_id: 1 }],
             request_actions: vec![RequestAction::Filled]
         };
-        assert_eq!(book.buyers.len(), (5 - i) as usize);
-        assert_eq!(book.sellers.len(), 0);
+        assert_eq!(book.buyers().len(), (5 - i) as usize);
+        assert_eq!(book.sellers().len(), 0);
         assert_eq!(matching_result, expected);
     }
 }
@@ -284,11 +284,11 @@ fn test_limit_matching_with_leftovers() {
     limit_request.size = 5;
     // lets try selling 5 pieces to an order with 1 piece
     book.match_request(&limit_request);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 0);
     limit_request.size = 4;
     // lets check if a leftover is saved properly
-    assert_eq!(book.sellers[0], limit_request);
+    assert_eq!(book.sellers()[0], limit_request);
 }
 
 #[test]
@@ -323,17 +323,17 @@ fn test_spread_limit_matching() {
     };
     // let's cover all of the buy offers and leave 100 in a book
     book.match_request(&limit_request);
-    assert_eq!(book.sellers.len(), 101);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 101);
+    assert_eq!(book.buyers().len(), 0);
     limit_request.side = Side::Buy;
     limit_request.price = 1000;
     // let's cover all of the sell offers (except previous one cause it's from the same user)
     // and leave 100 in book
     book.match_request(&limit_request);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 1);
-    assert_eq!(book.buyers[0].size, 100);
-    assert_eq!(book.sellers[0].size, 100);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 1);
+    assert_eq!(book.buyers()[0].size, 100);
+    assert_eq!(book.sellers()[0].size, 100);
 }
 
 #[test]
@@ -356,19 +356,19 @@ fn test_simple_fill_or_kill_selling_one_to_one() {
     };
     // same user_id shouldn't sell to the book
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 1);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 1);
     fk_request.user_id = 2;
     fk_request.size = 3;
     // unfilled incoming request should pass by
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 1);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 1);
     fk_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 0);
 }
 
 #[test]
@@ -391,19 +391,19 @@ fn test_simple_fill_or_kill_bying_one_to_one() {
     };
     // same user_id shouldn't sell to the book
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 0);
     fk_request.user_id = 2;
     fk_request.size = 3;
     // unfilled incoming request should pass by
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 0);
     fk_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 0);
 }
 
 #[test]
@@ -428,13 +428,13 @@ fn test_spread_fill_or_kill_selling() {
     };
     // shouldn't sell when is not satisfied
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 100);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 100);
     fk_request.size = 100;
     // filled incoming request should be matched
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 0);
 }
 
 #[test]
@@ -459,13 +459,13 @@ fn test_spread_fill_or_kill_buying() {
     };
     // shouldn't sell when is not satisfied
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 100);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 100);
+    assert_eq!(book.buyers().len(), 0);
     fk_request.size = 100;
     // filled incoming request should be matched
     book.match_request(&fk_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 0);
 }
 
 #[test]
@@ -488,20 +488,20 @@ fn test_simple_immediate_or_cancel_selling_one_to_one() {
     };
     // same user_id shouldn't sell to the book
     book.match_request(&ic_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 1);
-    assert_eq!(book.buyers[0].size, 3);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 1);
+    assert_eq!(book.buyers()[0].size, 3);
     ic_request.user_id = 2;
     // unfilled incoming request should pass by
     book.match_request(&ic_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 1);
-    assert_eq!(book.buyers[0].size, 2);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 1);
+    assert_eq!(book.buyers()[0].size, 2);
     ic_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&ic_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 0);
 }
 
 #[test]
@@ -524,20 +524,20 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
     };
     // same user_id shouldn't buy from the book
     book.match_request(&ic_request);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 0);
-    assert_eq!(book.sellers[0].size, 3);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 0);
+    assert_eq!(book.sellers()[0].size, 3);
     ic_request.user_id = 2;
     // unfilled incoming request should pass by
     book.match_request(&ic_request);
-    assert_eq!(book.sellers.len(), 1);
-    assert_eq!(book.buyers.len(), 0);
-    assert_eq!(book.sellers[0].size, 2);
+    assert_eq!(book.sellers().len(), 1);
+    assert_eq!(book.buyers().len(), 0);
+    assert_eq!(book.sellers()[0].size, 2);
     ic_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&ic_request);
-    assert_eq!(book.sellers.len(), 0);
-    assert_eq!(book.buyers.len(), 0);
+    assert_eq!(book.sellers().len(), 0);
+    assert_eq!(book.buyers().len(), 0);
 }
 
 impl Distribution<Type> for Standard {
