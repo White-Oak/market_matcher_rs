@@ -96,7 +96,7 @@ impl OrderBook {
         let mut left = request.size;
         let mut market_actions = Vec::new();
         let mut request_actions = Vec::new();
-        let mut ranges = Vec::new();
+        let mut ranges = Vec::with_capacity(20);
         let opposite_vec = match request.side {
             Side::Buy => &mut self.sellers,
             Side::Sell => &mut self.buyers,
@@ -109,7 +109,7 @@ impl OrderBook {
             if let Some(mut passive_request) = opposite_vec.get_mut(current_index) {
                 if passive_request.user_id == request.user_id {
                     if previous_left_border != current_index {
-                        ranges.push(previous_left_border..current_index);
+                        ranges.push((previous_left_border, current_index));
                     }
                     current_index += 1;
                     previous_left_border = current_index;
@@ -157,14 +157,20 @@ impl OrderBook {
         }
         // println!("After left border {}, curr index {}", previous_left_border, current_index);
         if previous_left_border != current_index {
-            ranges.push(previous_left_border..current_index);
+            ranges.push((previous_left_border, current_index));
         }
         // println!("{:?}", ranges);
 
         let is_fk = request.request_type == Type::FillOrKill;
         if left == 0 || !is_fk {
-            for range in ranges.into_iter().rev() {
-                opposite_vec.drain(range);
+            for (start, end) in ranges.into_iter().rev() {
+                // println!("left border {}, curr index {}", start, end);
+                unsafe {
+                    let ptr = opposite_vec.as_mut_ptr().add(start);
+                    std::ptr::copy(ptr.add(end - start), ptr, opposite_vec.len() - end);
+                    opposite_vec.set_len(opposite_vec.len() - (end - start));
+                }
+                // opposite_vec.drain(range);
             }
         }
 

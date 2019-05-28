@@ -208,6 +208,7 @@ fn test_correct_logic_of_buying_matching() {
         };
         book.match_request(&limit_request);
     }
+    println!("Starting {:#?}", book);
     for i in 5..10 {
         let limit_request = Request {
             side: Side::Buy,
@@ -216,6 +217,7 @@ fn test_correct_logic_of_buying_matching() {
             user_id: 2,
             request_type: Type::Limit,
         };
+        println!("{:#?}", book);
         let matching_result = book.match_request(&limit_request);
         let expected = MatchingResult {
             market_actions: vec![MarketAction {

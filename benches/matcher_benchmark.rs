@@ -72,6 +72,8 @@ fn l_insert_worst_case_benchmark(c: &mut Criterion) {
         },
     );
 }
+
+
 fn l_benchmark(c: &mut Criterion) {
     let mut book = OrderBook::default();
     for i in 0..7000 {
@@ -164,5 +166,5 @@ criterion_group!(
     l_insert_benchmark,
     l_insert_worst_case_benchmark
 );
-// criterion_group!(benches, l_benchmark);
+// criterion_group!(benches, l_benchmark1);
 criterion_main!(benches);
