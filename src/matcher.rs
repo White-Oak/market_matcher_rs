@@ -99,7 +99,7 @@ impl OrderBook {
         let mut ranges = Vec::new();
         let opposite_vec = match request.side {
             Side::Buy => &mut self.sellers,
-            Side::Sell => &mut self.buyers
+            Side::Sell => &mut self.buyers,
         };
 
         let mut previous_left_border = 0;
@@ -116,33 +116,32 @@ impl OrderBook {
                     continue;
                 }
                 let max_allowed = cmp::min(passive_request.size, left);
-                let market_action =
-                    match request.side {
-                        Side::Sell => {
-                            if passive_request.price < request.price {
-                                // we can sell only higher or equal to an order
-                                break;
-                            }
-                            MarketAction {
-                                size: max_allowed,
-                                price: passive_request.price,
-                                seller_user_id: request.user_id,
-                                buyer_user_id: passive_request.user_id,
-                            }
-                        },
-                        Side::Buy => {
-                            if passive_request.price > request.price {
-                                // we can buy only lower or equal to an order
-                                break;
-                            }
-                            MarketAction {
-                                size: max_allowed,
-                                price: passive_request.price,
-                                seller_user_id: passive_request.user_id,
-                                buyer_user_id: request.user_id,
-                            }
+                let market_action = match request.side {
+                    Side::Sell => {
+                        if passive_request.price < request.price {
+                            // we can sell only higher or equal to an order
+                            break;
                         }
-                    };
+                        MarketAction {
+                            size: max_allowed,
+                            price: passive_request.price,
+                            seller_user_id: request.user_id,
+                            buyer_user_id: passive_request.user_id,
+                        }
+                    }
+                    Side::Buy => {
+                        if passive_request.price > request.price {
+                            // we can buy only lower or equal to an order
+                            break;
+                        }
+                        MarketAction {
+                            size: max_allowed,
+                            price: passive_request.price,
+                            seller_user_id: passive_request.user_id,
+                            buyer_user_id: request.user_id,
+                        }
+                    }
+                };
                 left -= max_allowed;
                 market_actions.push(market_action);
                 current_index += 1;
@@ -199,7 +198,7 @@ impl OrderBook {
             request_actions.push(RequestAction::Filled);
         }
         MatchingResult {
-            market_actions: market_actions,
+            market_actions,
             request_actions,
         }
     }

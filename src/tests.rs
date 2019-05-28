@@ -314,7 +314,7 @@ fn test_spread_limit_matching() {
             user_id: i,
             request_type: Type::Limit,
         };
-        let result = book.match_request(&limit_request);
+        book.match_request(&limit_request);
     }
     assert_eq!(book.sellers.len(), 100);
     assert_eq!(book.buyers.len(), 100);
@@ -547,13 +547,13 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
 #[test]
 fn test_correct_removing_from_book_all() {
     let mut book = OrderBook::default();
-    for i in 1..=10 {
+    for _i in 1..=10 {
         let request = Request {
             side: Side::Sell,
             price: 1,
             size: 1,
             user_id: 1,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         book.match_request(&request);
     }
@@ -563,12 +563,11 @@ fn test_correct_removing_from_book_all() {
         price: 1,
         size: 10,
         user_id: 2,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&request);
     assert_eq!(book.sellers.len(), 0);
 }
-
 
 #[test]
 fn test_correct_removing_from_book_except_user_3() {
@@ -579,7 +578,7 @@ fn test_correct_removing_from_book_except_user_3() {
             price: 1,
             size: 1,
             user_id: i,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         book.match_request(&request);
     }
@@ -589,7 +588,7 @@ fn test_correct_removing_from_book_except_user_3() {
         price: 1,
         size: 10,
         user_id: 3,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&request);
     assert_eq!(book.sellers.len(), 1);
@@ -604,7 +603,7 @@ fn test_correct_removing_from_book_except_user_2() {
             price: 1,
             size: 1,
             user_id: i,
-            request_type: Type::Limit
+            request_type: Type::Limit,
         };
         book.match_request(&request);
     }
@@ -614,7 +613,7 @@ fn test_correct_removing_from_book_except_user_2() {
         price: 1,
         size: 10,
         user_id: 2,
-        request_type: Type::Limit
+        request_type: Type::Limit,
     };
     book.match_request(&request);
     assert_eq!(book.sellers.len(), 1);
