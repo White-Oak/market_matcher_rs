@@ -23,31 +23,12 @@ pub struct Request {
     pub request_type: Type,
 }
 
-struct MarketActionToApply {
-    size: u64,
-    price: u64,
-    seller_user_id: u64,
-    buyer_user_id: u64,
-    index_in_book: usize,
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct MarketAction {
     pub size: u64,
     pub price: u64,
     pub seller_user_id: u64,
     pub buyer_user_id: u64,
-}
-
-impl From<MarketActionToApply> for MarketAction {
-    fn from(mata: MarketActionToApply) -> Self {
-        MarketAction {
-            size: mata.size,
-            price: mata.price,
-            seller_user_id: mata.seller_user_id,
-            buyer_user_id: mata.buyer_user_id,
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -125,7 +106,7 @@ impl OrderBook {
         let mut current_index = 0;
         while left > 0 {
             // println!("left border {}, curr index {}", previous_left_border, current_index);
-            if let Some(passive_request) = opposite_vec.get(current_index) {
+            if let Some(mut passive_request) = opposite_vec.get_mut(current_index) {
                 if passive_request.user_id == request.user_id {
                     if previous_left_border != current_index {
                         ranges.push(previous_left_border..current_index);
@@ -142,12 +123,11 @@ impl OrderBook {
                                 // we can sell only higher or equal to an order
                                 break;
                             }
-                            MarketActionToApply {
+                            MarketAction {
                                 size: max_allowed,
                                 price: passive_request.price,
                                 seller_user_id: request.user_id,
                                 buyer_user_id: passive_request.user_id,
-                                index_in_book: current_index,
                             }
                         },
                         Side::Buy => {
@@ -155,12 +135,11 @@ impl OrderBook {
                                 // we can buy only lower or equal to an order
                                 break;
                             }
-                            MarketActionToApply {
+                            MarketAction {
                                 size: max_allowed,
                                 price: passive_request.price,
                                 seller_user_id: passive_request.user_id,
                                 buyer_user_id: request.user_id,
-                                index_in_book: current_index,
                             }
                         }
                     };
@@ -168,6 +147,7 @@ impl OrderBook {
                 market_actions.push(market_action);
                 current_index += 1;
                 if max_allowed != passive_request.size {
+                    passive_request.size -= max_allowed;
                     current_index -= 1;
                     break;
                 }
@@ -184,16 +164,6 @@ impl OrderBook {
 
         let is_fk = request.request_type == Type::FillOrKill;
         if left == 0 || !is_fk {
-            for market_action in market_actions.iter() {
-                let mark = market_action.index_in_book;
-                let mut changed_request =
-                    &mut opposite_vec[mark];
-                // if sizes are not equal we need to change the order in book
-                if changed_request.size != market_action.size {
-                    changed_request.size -= market_action.size;
-                    continue;
-                }
-            }
             for range in ranges.into_iter().rev() {
                 opposite_vec.drain(range);
             }
@@ -229,7 +199,7 @@ impl OrderBook {
             request_actions.push(RequestAction::Filled);
         }
         MatchingResult {
-            market_actions: market_actions.into_iter().map(|i| i.into()).collect(),
+            market_actions: market_actions,
             request_actions,
         }
     }
