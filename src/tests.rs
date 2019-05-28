@@ -540,3 +540,79 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
+
+#[test]
+fn test_correct_removing_from_book_all() {
+    let mut book = OrderBook::default();
+    for i in 1..=10 {
+        let request = Request {
+            side: Side::Sell,
+            price: 1,
+            size: 1,
+            user_id: 1,
+            request_type: Type::Limit
+        };
+        book.match_request(&request);
+    }
+    assert_eq!(book.sellers.len(), 10);
+    let request = Request {
+        side: Side::Buy,
+        price: 1,
+        size: 10,
+        user_id: 2,
+        request_type: Type::Limit
+    };
+    book.match_request(&request);
+    assert_eq!(book.sellers.len(), 0);
+}
+
+
+#[test]
+fn test_correct_removing_from_book_except_user_3() {
+    let mut book = OrderBook::default();
+    for i in 1..=10 {
+        let request = Request {
+            side: Side::Sell,
+            price: 1,
+            size: 1,
+            user_id: i,
+            request_type: Type::Limit
+        };
+        book.match_request(&request);
+    }
+    assert_eq!(book.sellers.len(), 10);
+    let request = Request {
+        side: Side::Buy,
+        price: 1,
+        size: 10,
+        user_id: 3,
+        request_type: Type::Limit
+    };
+    book.match_request(&request);
+    assert_eq!(book.sellers.len(), 1);
+}
+
+#[test]
+fn test_correct_removing_from_book_except_user_2() {
+    let mut book = OrderBook::default();
+    for i in 1..=10 {
+        let request = Request {
+            side: Side::Sell,
+            price: 1,
+            size: 1,
+            user_id: i,
+            request_type: Type::Limit
+        };
+        book.match_request(&request);
+    }
+    assert_eq!(book.sellers.len(), 10);
+    let request = Request {
+        side: Side::Buy,
+        price: 1,
+        size: 10,
+        user_id: 2,
+        request_type: Type::Limit
+    };
+    book.match_request(&request);
+    assert_eq!(book.sellers.len(), 1);
+}

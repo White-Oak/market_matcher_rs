@@ -115,12 +115,16 @@ impl OrderBook {
         let mut left = request.size;
         let mut market_actions = Vec::new();
         let mut request_actions = Vec::new();
+        let opposite_vec = match request.side {
+            Side::Buy => &mut self.sellers,
+            Side::Sell => &mut self.buyers
+        };
 
         match request.side {
             Side::Sell => {
                 let mut current_index = 0;
                 while left > 0 {
-                    if let Some(mut buyer) = self.buyers.get_mut(current_index) {
+                    if let Some(buyer) = opposite_vec.get(current_index) {
                         if buyer.user_id == request.user_id {
                             current_index += 1;
                             continue;
@@ -139,24 +143,7 @@ impl OrderBook {
                             index_in_book: current_index,
                         };
                         market_actions.push(market_action);
-                        match request.request_type {
-                            Type::Limit | Type::ImmediateOrCancel => {
-                                if buyer.size == max_allowed {
-                                    // if an order was fully satisfied we remove it from the book
-                                    self.buyers.remove(current_index);
-                                } else {
-                                    // else change its amount
-                                    buyer.size -= max_allowed
-                                }
-                            }
-                            Type::FillOrKill => {
-                                // if an order was fully satisfied we need to move to the next item
-                                // in list
-                                if buyer.size == max_allowed {
-                                    current_index += 1;
-                                }
-                            }
-                        }
+                        current_index += 1;
                     } else {
                         // if there are no buyers left, we cannot sell anymore
                         break;
@@ -166,7 +153,7 @@ impl OrderBook {
             Side::Buy => {
                 let mut current_index = 0;
                 while left > 0 {
-                    if let Some(seller) = self.sellers.get_mut(current_index) {
+                    if let Some(seller) = opposite_vec.get(current_index) {
                         if seller.user_id == request.user_id {
                             current_index += 1;
                             continue;
@@ -185,24 +172,7 @@ impl OrderBook {
                             index_in_book: current_index,
                         };
                         market_actions.push(market_action);
-                        match request.request_type {
-                            Type::Limit | Type::ImmediateOrCancel => {
-                                if seller.size == max_allowed {
-                                    // if an order was fully satisfied we remove it from the book
-                                    self.sellers.remove(current_index);
-                                } else {
-                                    // else change its amount
-                                    seller.size -= max_allowed
-                                }
-                            }
-                            Type::FillOrKill => {
-                                // if an order was fully satisfied we need to move to the next item
-                                // in list
-                                if seller.size == max_allowed {
-                                    current_index += 1;
-                                }
-                            }
-                        }
+                        current_index += 1;
                     } else {
                         // if there are no buyers left, we cannot sell anymore
                         break;
@@ -210,6 +180,39 @@ impl OrderBook {
                 }
             }
         }
+
+        let is_fk = request.request_type == Type::FillOrKill;
+        if left == 0 || !is_fk {
+            let mut left_border = 0;
+            let mut right_border = 0;
+            let mut ranges = Vec::new();
+            for market_action in market_actions.iter() {
+                let mark = market_action.index_in_book;
+                let mut changed_request =
+                    &mut opposite_vec[mark];
+                // if sizes are not equal we need to change the order in book
+                if changed_request.size != market_action.size {
+                    changed_request.size -= market_action.size;
+                    continue;
+                }
+                // else we need to delete it from the book
+                if mark == right_border {
+                    right_border += 1;
+                } else {
+                    ranges.push(left_border..right_border);
+                    left_border = mark;
+                    right_border = mark + 1;
+                }
+            }
+            if left_border != right_border {
+                ranges.push(left_border..right_border);
+            }
+            for range in ranges.into_iter().rev() {
+                opposite_vec.drain(range);
+            }
+        }
+
+        // building result
         if left > 0 {
             // if there are leftovers from incoming request, save them to the book
             match request.request_type {
@@ -237,53 +240,6 @@ impl OrderBook {
             }
         } else {
             request_actions.push(RequestAction::Filled);
-            // if fill or kill request was fully satisfied, apply the changes to the book
-            match request.request_type {
-                Type::FillOrKill => {
-                    match request.side {
-                        // when an incoming request buys, changes are applied to sellers
-                        Side::Buy => {
-                            // we are going in reverse so the first action has the biggest index,
-                            // and the last one has the smallest.
-                            // this way, we can delete satisfied orders from book, because every
-                            // following action has a smaller index in the book than the current one
-                            for market_action in market_actions.iter().rev() {
-                                let mut changed_request =
-                                    &mut self.sellers[market_action.index_in_book];
-                                // if sizes are equal, an order in book was satisfied fully
-                                // so we can delete it
-                                if changed_request.size == market_action.size {
-                                    self.sellers.remove(market_action.index_in_book);
-                                    continue;
-                                }
-                                // else, change the size of the order
-                                changed_request.size -= market_action.size;
-                            }
-                        }
-                        // when an incoming request sells, changes are applied to buyers
-                        // Side::Sell => unimplemented!()
-                        Side::Sell => {
-                            // we are going in reverse so the first action has the biggest index,
-                            // and the last one has the smallest.
-                            // this way, we can delete satisfied orders from book, because every
-                            // following action has a smaller index in the book than the current one
-                            for market_action in market_actions.iter().rev() {
-                                let mut changed_request =
-                                    &mut self.buyers[market_action.index_in_book];
-                                // if sizes are equal, an order in book was satisfied fully
-                                // so we can delete it
-                                if changed_request.size == market_action.size {
-                                    self.buyers.remove(market_action.index_in_book);
-                                    continue;
-                                }
-                                // else, change the size of the order
-                                changed_request.size -= market_action.size;
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
         }
         MatchingResult {
             market_actions: market_actions.into_iter().map(|i| i.into()).collect(),
