@@ -115,20 +115,26 @@ impl OrderBook {
         let mut left = request.size;
         let mut market_actions = Vec::new();
         let mut request_actions = Vec::new();
+        let mut ranges = Vec::new();
         let opposite_vec = match request.side {
             Side::Buy => &mut self.sellers,
             Side::Sell => &mut self.buyers
         };
 
+        let mut previous_left_border = 0;
         let mut current_index = 0;
         while left > 0 {
+            // println!("left border {}, curr index {}", previous_left_border, current_index);
             if let Some(passive_request) = opposite_vec.get(current_index) {
                 if passive_request.user_id == request.user_id {
+                    if previous_left_border != current_index {
+                        ranges.push(previous_left_border..current_index);
+                    }
                     current_index += 1;
+                    previous_left_border = current_index;
                     continue;
                 }
                 let max_allowed = cmp::min(passive_request.size, left);
-                left -= max_allowed;
                 let market_action =
                     match request.side {
                         Side::Sell => {
@@ -158,19 +164,26 @@ impl OrderBook {
                             }
                         }
                     };
+                left -= max_allowed;
                 market_actions.push(market_action);
                 current_index += 1;
+                if max_allowed != passive_request.size {
+                    current_index -= 1;
+                    break;
+                }
             } else {
                 // if there are no passive requests left, we cannot sell anymore
                 break;
             }
         }
+        // println!("After left border {}, curr index {}", previous_left_border, current_index);
+        if previous_left_border != current_index {
+            ranges.push(previous_left_border..current_index);
+        }
+        // println!("{:?}", ranges);
 
         let is_fk = request.request_type == Type::FillOrKill;
         if left == 0 || !is_fk {
-            let mut left_border = 0;
-            let mut right_border = 0;
-            let mut ranges = Vec::new();
             for market_action in market_actions.iter() {
                 let mark = market_action.index_in_book;
                 let mut changed_request =
@@ -180,17 +193,6 @@ impl OrderBook {
                     changed_request.size -= market_action.size;
                     continue;
                 }
-                // else we need to delete it from the book
-                if mark == right_border {
-                    right_border += 1;
-                } else {
-                    ranges.push(left_border..right_border);
-                    left_border = mark;
-                    right_border = mark + 1;
-                }
-            }
-            if left_border != right_border {
-                ranges.push(left_border..right_border);
             }
             for range in ranges.into_iter().rev() {
                 opposite_vec.drain(range);

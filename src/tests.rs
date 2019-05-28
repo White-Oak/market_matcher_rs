@@ -305,6 +305,7 @@ fn test_spread_limit_matching() {
         };
         book.match_request(&limit_request);
     }
+    assert_eq!(book.buyers.len(), 100);
     for i in 101..=200 {
         let limit_request = Request {
             side: Side::Sell,
@@ -313,8 +314,10 @@ fn test_spread_limit_matching() {
             user_id: i,
             request_type: Type::Limit,
         };
-        book.match_request(&limit_request);
+        let result = book.match_request(&limit_request);
     }
+    assert_eq!(book.sellers.len(), 100);
+    assert_eq!(book.buyers.len(), 100);
     let mut limit_request = Request {
         side: Side::Sell,
         price: 1,
@@ -527,7 +530,7 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
     book.match_request(&ic_request);
     assert_eq!(book.sellers.len(), 1);
     assert_eq!(book.buyers.len(), 0);
-    assert_eq!(book.sellers[0].size, 3);
+    assert_eq!(book.sellers[0], limit_request);
     ic_request.user_id = 2;
     // unfilled incoming request should pass by
     book.match_request(&ic_request);
