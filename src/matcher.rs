@@ -120,64 +120,49 @@ impl OrderBook {
             Side::Sell => &mut self.buyers
         };
 
-        match request.side {
-            Side::Sell => {
-                let mut current_index = 0;
-                while left > 0 {
-                    if let Some(buyer) = opposite_vec.get(current_index) {
-                        if buyer.user_id == request.user_id {
-                            current_index += 1;
-                            continue;
-                        }
-                        if buyer.price < request.price {
-                            // we can sell only higher or equal to an order
-                            break;
-                        }
-                        let max_allowed = cmp::min(buyer.size, left);
-                        left -= max_allowed;
-                        let market_action = MarketActionToApply {
-                            size: max_allowed,
-                            price: buyer.price,
-                            seller_user_id: request.user_id,
-                            buyer_user_id: buyer.user_id,
-                            index_in_book: current_index,
-                        };
-                        market_actions.push(market_action);
-                        current_index += 1;
-                    } else {
-                        // if there are no buyers left, we cannot sell anymore
-                        break;
-                    }
+        let mut current_index = 0;
+        while left > 0 {
+            if let Some(passive_request) = opposite_vec.get(current_index) {
+                if passive_request.user_id == request.user_id {
+                    current_index += 1;
+                    continue;
                 }
-            }
-            Side::Buy => {
-                let mut current_index = 0;
-                while left > 0 {
-                    if let Some(seller) = opposite_vec.get(current_index) {
-                        if seller.user_id == request.user_id {
-                            current_index += 1;
-                            continue;
+                let max_allowed = cmp::min(passive_request.size, left);
+                left -= max_allowed;
+                let market_action =
+                    match request.side {
+                        Side::Sell => {
+                            if passive_request.price < request.price {
+                                // we can sell only higher or equal to an order
+                                break;
+                            }
+                            MarketActionToApply {
+                                size: max_allowed,
+                                price: passive_request.price,
+                                seller_user_id: request.user_id,
+                                buyer_user_id: passive_request.user_id,
+                                index_in_book: current_index,
+                            }
+                        },
+                        Side::Buy => {
+                            if passive_request.price > request.price {
+                                // we can buy only lower or equal to an order
+                                break;
+                            }
+                            MarketActionToApply {
+                                size: max_allowed,
+                                price: passive_request.price,
+                                seller_user_id: passive_request.user_id,
+                                buyer_user_id: request.user_id,
+                                index_in_book: current_index,
+                            }
                         }
-                        if seller.price > request.price {
-                            // we can buy only lower or equal to an order
-                            break;
-                        }
-                        let max_allowed = cmp::min(seller.size, left);
-                        left -= max_allowed;
-                        let market_action = MarketActionToApply {
-                            size: max_allowed,
-                            price: seller.price,
-                            seller_user_id: seller.user_id,
-                            buyer_user_id: request.user_id,
-                            index_in_book: current_index,
-                        };
-                        market_actions.push(market_action);
-                        current_index += 1;
-                    } else {
-                        // if there are no buyers left, we cannot sell anymore
-                        break;
-                    }
-                }
+                    };
+                market_actions.push(market_action);
+                current_index += 1;
+            } else {
+                // if there are no passive requests left, we cannot sell anymore
+                break;
             }
         }
 
