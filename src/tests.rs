@@ -166,6 +166,7 @@ fn test_simple_limit_matching_one_to_one() {
     limit_request.user_id = 2;
     // should sell to other user
     let matching_result = book.match_request(&limit_request);
+    book.flush_request_queues();
     let expected = MatchingResult {
         market_actions: vec![MarketAction {
             size: 1,
@@ -181,6 +182,7 @@ fn test_simple_limit_matching_one_to_one() {
     limit_request.side = Side::Buy;
     // should buy from other user
     let matching_result = book.match_request(&limit_request);
+    book.flush_request_queues();
     let expected = MatchingResult {
         market_actions: vec![MarketAction {
             size: 1,
@@ -226,6 +228,7 @@ fn test_correct_logic_of_buying_matching() {
             }],
             request_actions: vec![RequestAction::Filled],
         };
+        book.flush_request_queues();
         assert_eq!(book.sellers.len(), (10 - i - 1) as usize);
         assert_eq!(book.buyers.len(), 0);
         assert_eq!(matching_result, expected);
@@ -254,6 +257,7 @@ fn test_correct_logic_of_selling_matching() {
             request_type: Type::Limit,
         };
         let matching_result = book.match_request(&limit_request);
+        book.flush_request_queues();
         let expected = MatchingResult {
             market_actions: vec![MarketAction {
                 size: 1,
@@ -371,6 +375,7 @@ fn test_simple_fill_or_kill_selling_one_to_one() {
     fk_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&fk_request);
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -406,6 +411,7 @@ fn test_simple_fill_or_kill_bying_one_to_one() {
     fk_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&fk_request);
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -437,6 +443,7 @@ fn test_spread_fill_or_kill_selling() {
     fk_request.size = 100;
     // filled incoming request should be matched
     book.match_request(&fk_request);
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -468,6 +475,7 @@ fn test_spread_fill_or_kill_buying() {
     fk_request.size = 100;
     // filled incoming request should be matched
     book.match_request(&fk_request);
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -504,6 +512,7 @@ fn test_simple_immediate_or_cancel_selling_one_to_one() {
     ic_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&ic_request);
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -540,6 +549,7 @@ fn test_simple_immediate_or_cancel_buying_one_to_one() {
     ic_request.size = 2;
     // filled incoming request should be matched
     book.match_request(&ic_request);
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 0);
     assert_eq!(book.buyers.len(), 0);
 }
@@ -557,6 +567,7 @@ fn test_correct_removing_from_book_all() {
         };
         book.match_request(&request);
     }
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 10);
     let request = Request {
         side: Side::Buy,
@@ -566,6 +577,7 @@ fn test_correct_removing_from_book_all() {
         request_type: Type::Limit,
     };
     book.match_request(&request);
+    book.flush_request_queues();
     assert_eq!(book.sellers.len(), 0);
 }
 
