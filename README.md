@@ -8,17 +8,9 @@
 
 ```
                                 Lower bound   Estimate  Upper bound
-Limit matching          time:   [12.710 us 13.011 us 13.244 us]
-```
-
-Результаты бенчмарков для матчинга входящей заявки, которая сводится с 20 из очереди в 7000 (`на Intel(R) Core(TM) i3-7100 CPU @ 3.90GHz`):
-
-```
-                                Lower bound   Estimate  Upper bound
-Limit matching          time:   [360.44 ns 365.49 ns 371.58 ns]
-Limit quiet matching    time:   [161.08 ns 163.21 ns 165.31 ns]
+Limit matching          time:   [330.75 ns 336.21 ns 342.61 ns]
+Limit quiet matching    time:   [135.04 ns 138.24 ns 140.96 ns]
 ```
 
 Изначальная имплементация имела скорость выполнения 90 us.
 
-Из минусов данной реализации стоит отметить частое дублирование похожих ветвей кода для заявок на покупку/продажу. В ветке [smarter](https://github.com/White-Oak/market_matcher_rs/tree/smarter) была проведена попытка полиморфировать ветви продажи/покупки, однако из-за недостатка времени она получилась не очень удобной для чтения, поэтому в мастере находится эта версия.
